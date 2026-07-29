@@ -207,26 +207,48 @@ const API = {
     }, ms);
   },
 
-  // Core fetch with auto-rotation and exponential backoff
-  async fetch(endpoint, params = {}, attempt = 0) {
-    const url = new URL(`${CONFIG.BASE_URL}${endpoint}`);
-    url.searchParams.set('language', CONFIG.DEFAULT_LANG);
-    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+  // TRUE when running on Vercel / any deployed domain
+  isDeployed() {
+    const h = location.hostname;
+    return h !== 'localhost' && h !== '127.0.0.1' && !h.startsWith('192.168');
+  },
 
-    let res;
-    try {
-      res = await fetch(url.toString(), {
+  // Build fetch URL + headers depending on environment
+  // → Vercel: routes through /api/tmdb/... serverless proxy (no CORS)
+  // → Localhost: calls TMDB directly with Bearer token
+  buildRequest(endpoint, params) {
+    if (this.isDeployed()) {
+      const proxyPath = endpoint.replace(/^\//, '');
+      const url = new URL(`${location.origin}/api/tmdb/${proxyPath}`);
+      url.searchParams.set('language', CONFIG.DEFAULT_LANG);
+      Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+      return { url: url.toString(), headers: { 'Accept': 'application/json' } };
+    } else {
+      const url = new URL(`${CONFIG.BASE_URL}${endpoint}`);
+      url.searchParams.set('language', CONFIG.DEFAULT_LANG);
+      Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+      return {
+        url: url.toString(),
         headers: {
           'Authorization': `Bearer ${this.current.bearer}`,
           'Accept': 'application/json',
         },
-      });
+      };
+    }
+  },
+
+  // Core fetch — auto-rotates keys, retries with exponential backoff
+  async fetch(endpoint, params = {}, attempt = 0) {
+    const { url, headers } = this.buildRequest(endpoint, params);
+
+    let res;
+    try {
+      res = await fetch(url, { headers });
     } catch (networkErr) {
       // Network error (offline, CORS, etc.) — rotate and retry
       console.warn('[CineVerse] Network error:', networkErr.message);
       if (attempt < 5) {
-        const delay = this.retryDelays[attempt] + Math.random() * 500;
-        await sleep(delay);
+        await sleep(this.retryDelays[attempt] + Math.random() * 500);
         this.rotate('network-error');
         return this.fetch(endpoint, params, attempt + 1);
       }
@@ -239,8 +261,7 @@ const API = {
       console.warn(`[CineVerse] Rate limited on key ${this.poolIndex}. Cooldown ${retryAfter}ms`);
       this.setCooldown(this.poolIndex, retryAfter + 1000);
       this.rotate('rate-limited');
-      const delay = this.retryDelays[Math.min(attempt, 4)] + Math.random() * 500;
-      await sleep(delay);
+      await sleep(this.retryDelays[Math.min(attempt, 4)] + Math.random() * 500);
       return this.fetch(endpoint, params, attempt + 1);
     }
 
@@ -261,8 +282,7 @@ const API = {
     // ── 5xx Server Error — backoff and retry same key ─────────
     if (res.status >= 500) {
       if (attempt < 4) {
-        const delay = this.retryDelays[attempt] + Math.random() * 500;
-        await sleep(delay);
+        await sleep(this.retryDelays[attempt] + Math.random() * 500);
         return this.fetch(endpoint, params, attempt + 1);
       }
       throw new Error(`TMDB server error ${res.status}`);
