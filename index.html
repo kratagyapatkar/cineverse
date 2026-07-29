@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CineVerse — The Universe of Cinema</title>
+  <meta name="description" content="Explore an infinite universe of movies, web series, and documentaries. Hover to discover your next watch." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ====== LOADING SCREEN ====== -->
+  <div id="loader" class="loader">
+    <div class="loader-inner">
+      <div class="loader-orb"></div>
+      <div class="loader-text">CINEVERSE</div>
+      <div class="loader-sub">Mapping the universe of cinema…</div>
+      <div class="loader-bar"><div class="loader-fill" id="loaderFill"></div></div>
+    </div>
+  </div>
+
+  <!-- ====== STARS CANVAS ====== -->
+  <canvas id="starsCanvas"></canvas>
+
+  <!-- ====== CURSOR GLOW ====== -->
+  <div id="cursorGlow"></div>
+
+  <!-- ====== HEADER ====== -->
+  <header id="header">
+    <div class="header-left">
+      <div class="logo">
+        <span class="logo-icon">✦</span>
+        <span class="logo-text">CineVerse</span>
+      </div>
+    </div>
+    <div class="header-center">
+      <div class="search-container" id="searchContainer">
+        <span class="search-icon">⌕</span>
+        <input type="text" id="searchInput" placeholder="Search the universe…" autocomplete="off" spellcheck="false" />
+        <div class="search-results" id="searchResults"></div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="live-badge" id="liveBadge">
+        <span class="live-dot"></span>
+        <span>Live</span>
+      </div>
+      <div class="api-btn" id="apiBtn" title="Configure API Key">⚙ API</div>
+    </div>
+  </header>
+
+  <!-- ====== FILTER BAR ====== -->
+  <nav class="filter-bar" id="filterBar">
+    <button class="filter-chip active" data-filter="all" id="chip-all">✦ All</button>
+    <button class="filter-chip" data-filter="movie" id="chip-movie">🎬 Movies</button>
+    <button class="filter-chip" data-filter="tv" id="chip-tv">📺 Web Series</button>
+    <button class="filter-chip" data-filter="documentary" id="chip-documentary">🎥 Documentaries</button>
+    <div class="filter-divider"></div>
+    <button class="filter-chip sort-chip" data-sort="popular" id="sort-popular">🔥 Popular</button>
+    <button class="filter-chip sort-chip" data-sort="trending" id="sort-trending">📈 Trending</button>
+    <button class="filter-chip sort-chip" data-sort="top_rated" id="sort-rated">⭐ Top Rated</button>
+    <button class="filter-chip sort-chip" data-sort="upcoming" id="sort-upcoming">🚀 Upcoming</button>
+    <div class="filter-divider"></div>
+    <label class="size-label">Size:</label>
+    <input type="range" id="sizeSlider" min="80" max="220" value="130" class="size-slider" />
+  </nav>
+
+  <!-- ====== UNIVERSE GRID ====== -->
+  <main id="universe" class="universe">
+    <div class="universe-grid" id="universeGrid"></div>
+    <div class="load-more-zone" id="loadMoreZone"></div>
+  </main>
+
+  <!-- ====== EXPANDED MODAL ====== -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-card" id="modalCard">
+      <button class="modal-close" id="modalClose">✕</button>
+      <div class="modal-backdrop" id="modalBackdrop"></div>
+      <div class="modal-gradient"></div>
+      <div class="modal-content">
+        <div class="modal-poster-wrap">
+          <img class="modal-poster" id="modalPoster" src="" alt="" />
+          <div class="modal-rating" id="modalRating"></div>
+        </div>
+        <div class="modal-info">
+          <div class="modal-type-badge" id="modalType"></div>
+          <h1 class="modal-title" id="modalTitle"></h1>
+          <div class="modal-meta" id="modalMeta"></div>
+          <p class="modal-overview" id="modalOverview"></p>
+          <div class="modal-genres" id="modalGenres"></div>
+          <div class="modal-actions">
+            <a class="btn-primary" id="modalWatchBtn" href="#" target="_blank">▶ Watch Now</a>
+            <button class="btn-secondary" id="modalTrailerBtn">🎬 Trailer</button>
+            <button class="btn-icon" id="modalBookmarkBtn" title="Watchlist">🔖</button>
+          </div>
+          <div class="modal-cast" id="modalCast"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== API KEY MODAL ====== -->
+  <div class="api-modal-overlay" id="apiModalOverlay">
+    <div class="api-modal-card">
+      <div class="api-modal-icon">🔑</div>
+      <h2>Connect Your Universe</h2>
+      <p>Enter your free <strong>TMDB API key</strong> to unlock the full universe of cinema.</p>
+      <p class="api-hint">Get yours free at <a href="https://www.themoviedb.org/settings/api" target="_blank">themoviedb.org</a></p>
+      <input type="text" id="apiKeyInput" placeholder="Paste your TMDB API key here…" />
+      <div class="api-modal-actions">
+        <button id="apiSaveBtn" class="btn-primary">✦ Launch Universe</button>
+        <button id="apiDemoBtn" class="btn-secondary">Try Demo Mode</button>
+      </div>
+      <p class="api-note">Your key is stored locally in your browser only.</p>
+    </div>
+  </div>
+
+  <!-- ====== TOAST ====== -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ====== TRAILER IFRAME ====== -->
+  <div class="trailer-overlay" id="trailerOverlay">
+    <div class="trailer-card">
+      <button class="trailer-close" id="trailerClose">✕</button>
+      <div class="iframe-wrap">
+        <iframe id="trailerFrame" frameborder="0" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
